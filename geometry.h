@@ -36,7 +36,7 @@ public:
     return std::sqrt(result);
   }
 
-  VectorTemplate<3, T> Normalize() {
+  VectorTemplate<Dims, T> Normalize() {
     return (*this) / Norm();
   }
 
@@ -125,6 +125,15 @@ VectorTemplate<Dims, T> operator-(const VectorTemplate<Dims, T>& lhs, const Vect
 }
 
 template <size_t Dims, typename T>
+T operator*(const VectorTemplate<Dims, T>&lhs, const VectorTemplate<Dims, T>& rhs) {
+  T result = T();
+  for (size_t i = 0; i < Dims; ++i) {
+    result += lhs[i] * rhs[i];
+  }
+  return result;
+}
+
+template <size_t Dims, typename T>
 VectorTemplate<Dims + 1, T> ToHomogeneous(const VectorTemplate<Dims, T>& vector) {
   VectorTemplate<Dims + 1, T> result;
   for (size_t i = 0; i < Dims; ++i) {
@@ -165,7 +174,7 @@ template <typename T>
 VectorTemplate<3, T> CrossProduction(const VectorTemplate<3, T>& v1, const VectorTemplate<3, T>& v2) {
   return{ v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
 }
-
+/*
 template <size_t N, typename T>
 T DotProduction(const VectorTemplate<N, T> &v1, const VectorTemplate<N, T> &v2) {
   T result = 0;
@@ -174,7 +183,7 @@ T DotProduction(const VectorTemplate<N, T> &v1, const VectorTemplate<N, T> &v2) 
   }
   return result;
 }
-
+*/
 template <size_t Dims, typename T>
 std::ostream& operator<<(std::ostream& out, const VectorTemplate<Dims, T>& vector) {
   out << "[";
@@ -255,16 +264,10 @@ public:
     return result;
   }
 
-  T Det() const {
-    T result = 0;
-    for (size_t i = std::min(ColDims, RowDims); i--; result += rows_[0][i] * Cofactor(0, i));
-    return result;
-  }
-
   MatrixTemplate<RowDims - 1, ColDims - 1, T> GetMinor(size_t row, size_t col) const {
     MatrixTemplate<RowDims - 1, ColDims - 1, T> result;
-    for (size_t i = 0; i < RowDims; ++i) {
-      for (size_t j = 0; j < ColDims; ++j) {
+    for (size_t i = 0; i + 1 < RowDims; ++i) {
+      for (size_t j = 0; j + 1 < ColDims; ++j) {
         result[i][j] = rows_[i < row ? i : i + 1][j < col ? j : j + 1];
       }
     }
@@ -272,7 +275,7 @@ public:
   }
 
   T Cofactor(size_t row, size_t col) const {
-    return GetMinor(row, col).Det()*((row + col) % 2 ? -1 : 1);
+    return Det(GetMinor(row, col))*((row + col) % 2 ? -1 : 1);
   }
 
   MatrixTemplate<RowDims, ColDims, T> Adjugate() const {
@@ -303,7 +306,7 @@ template <size_t RowDims, size_t ColDims, typename T>
 VectorTemplate<RowDims, T> operator*(const MatrixTemplate<RowDims, ColDims, T>& lhs, const VectorTemplate<ColDims, T>& rhs) {
   VectorTemplate<RowDims, T> result;
   for (size_t i = 0; i < RowDims; ++i) {
-    result[i] = DotProduction(lhs[i], rhs);
+    result[i] = lhs[i] * rhs;
   }
   return result;
 }
@@ -347,6 +350,21 @@ VectorTemplate<Dims, int> Round(const VectorTemplate<Dims, T>& vector) {
   return result;
 }
 
+
+template<size_t Dims, typename T> 
+T Det(const MatrixTemplate<Dims, Dims, T>& matrix) {
+  T result = 0;
+  for (size_t i = 0; i < Dims; ++i) {
+    result += matrix[0][i] * matrix.Cofactor(0, i);
+  }
+  return result;
+};
+
+template<typename T> 
+T Det(const MatrixTemplate<1, 1, T>& matrix) {
+  return matrix[0][0];
+};
+
 template <size_t RowDims, size_t ColDims, typename T>
 MatrixTemplate<RowDims, ColDims, int> Round(const MatrixTemplate<RowDims, ColDims, T>& matrix) {
   MatrixTemplate<RowDims, ColDims, int> result;
@@ -368,14 +386,14 @@ std::ostream& operator<<(std::ostream& out, const MatrixTemplate<RowDims, ColDim
 }
 
 typedef VectorTemplate<2, float> Vector2f;
-typedef VectorTemplate<2, int>   Vector2i;
 typedef VectorTemplate<3, float> Vector3f;
-typedef VectorTemplate<3, int>   Vector3i;
 typedef VectorTemplate<4, float> Vector4f;
-typedef MatrixTemplate<4, 4, float> Matrix44f;
-typedef MatrixTemplate<4, 3, float> Matrix43f;
-typedef MatrixTemplate<3, 3, float> Matrix33f;
+typedef VectorTemplate<2, int>   Vector2i;
+
 typedef MatrixTemplate<2, 3, float> Matrix23f;
+typedef MatrixTemplate<3, 3, float> Matrix33f;
+typedef MatrixTemplate<4, 3, float> Matrix43f;
+typedef MatrixTemplate<4, 4, float> Matrix44f;
 typedef MatrixTemplate<4, 3, int> Matrix43i;
 
 Vector3f Barycentric(const Vector2i& A, const Vector2i& B, const Vector2i& C, const Vector2i& P);

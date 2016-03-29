@@ -50,6 +50,10 @@ struct TGAColor {
     }
   }
 
+  unsigned char& operator[](size_t idx) {
+    return raw[idx];
+  }
+
   TGAColor & operator =(const TGAColor &c) {
     if (this != &c) {
       bytespp = c.bytespp;
