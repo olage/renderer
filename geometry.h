@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <cmath>
+#include <array>
 
 template <size_t Dims, typename T>
 class VectorTemplate {
@@ -14,6 +15,11 @@ public:
     }
   }
 
+  template <typename U>
+  VectorTemplate(std::initializer_list<U> l) {
+    std::copy(l.begin(), l.end(), data_.begin());
+  }
+
   T& operator[] (const size_t idx) {
     return data_[idx];
   }
@@ -22,8 +28,21 @@ public:
     return data_[idx];
   }
 
+  T Norm() {
+    T result = 0;
+    for (size_t i = 0; i < Dims; ++i) {
+      result += data_[i] * data_[i];
+    }
+    return std::sqrt(result);
+  }
+
+  VectorTemplate<3, T> Normalize() {
+    return (*this) / Norm();
+  }
+
 private:
-  T data_[Dims];
+  //T data_[Dims];
+  std::array<T, Dims> data_;
 };
 
 template <typename T>
@@ -62,7 +81,8 @@ public:
     : x(), y(), z()
   {}
 
-  VectorTemplate(T x, T y, T z)
+  template <typename U>
+  VectorTemplate(U x, U y, U z)
     : x(x), y(y), z(z)
   {}
 
@@ -143,7 +163,7 @@ T Max(const VectorTemplate<Dims, T>& vector) {
 
 template <typename T>
 VectorTemplate<3, T> CrossProduction(const VectorTemplate<3, T>& v1, const VectorTemplate<3, T>& v2) {
-  return{ v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x };
+  return{ v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
 }
 
 template <size_t N, typename T>
@@ -280,10 +300,10 @@ private:
 };
 
 template <size_t RowDims, size_t ColDims, typename T>
-VectorTemplate<RowDims, T> operator*(const MatrixTemplate<ColDims, RowDims, T>& lhs, const VectorTemplate<ColDims, T>& rhs) {
-  VectorTemplate<ColDims, T> result;
+VectorTemplate<RowDims, T> operator*(const MatrixTemplate<RowDims, ColDims, T>& lhs, const VectorTemplate<ColDims, T>& rhs) {
+  VectorTemplate<RowDims, T> result;
   for (size_t i = 0; i < RowDims; ++i) {
-    result[i] = lhs[i] * rhs;
+    result[i] = DotProduction(lhs[i], rhs);
   }
   return result;
 }
@@ -312,18 +332,26 @@ VectorTemplate<Dims, T> operator/(VectorTemplate<Dims, T> lhs, T rhs) {
 template<size_t RowDims, size_t ColDims, typename T>
 MatrixTemplate<RowDims, ColDims, T> operator/(MatrixTemplate<RowDims, ColDims, T> lhs, const T& rhs) {
   for (size_t i = 0; i < RowDims; ++i) {
-    lhs[i] /= rhs;
+    lhs[i] = lhs[i] / rhs;
   }
   return lhs;
+}
+
+template <size_t Dims, typename T>
+VectorTemplate<Dims, int> Round(const VectorTemplate<Dims, T>& vector) {
+  VectorTemplate<Dims, int> result;
+  
+  for (size_t i = 0; i < Dims; ++i) {    
+      result[i] = (int)std::round(vector[i]);
+  }
+  return result;
 }
 
 template <size_t RowDims, size_t ColDims, typename T>
 MatrixTemplate<RowDims, ColDims, int> Round(const MatrixTemplate<RowDims, ColDims, T>& matrix) {
   MatrixTemplate<RowDims, ColDims, int> result;
   for (size_t i = 0; i < RowDims; ++i) {
-    for (size_t j = 0; j < ColDims; ++j) {
-      result[i][j] = (int)std::round(matrix[i][j]);
-    }
+    result[i] = Round(matrix[i]);
   }
   return result;
 }
@@ -346,8 +374,8 @@ typedef VectorTemplate<3, int>   Vector3i;
 typedef VectorTemplate<4, float> Vector4f;
 typedef MatrixTemplate<4, 4, float> Matrix44f;
 typedef MatrixTemplate<4, 3, float> Matrix43f;
-typedef MatrixTemplate<3, 4, float> Matrix34f;
-typedef MatrixTemplate<4, 1, float> Matrix41f;
+typedef MatrixTemplate<3, 3, float> Matrix33f;
+typedef MatrixTemplate<2, 3, float> Matrix23f;
 typedef MatrixTemplate<4, 3, int> Matrix43i;
 
 Vector3f Barycentric(const Vector2i& A, const Vector2i& B, const Vector2i& C, const Vector2i& P);
